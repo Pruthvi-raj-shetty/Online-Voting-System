@@ -1,0 +1,145 @@
+﻿@page
+@model VotingSystem.Pages.ResultsModel
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Election Results</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            min-height: 100vh;
+            background-color: #f5f5f5;
+        }
+
+        .sidebar {
+            width: 200px;
+            background-color: #2c3e50;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            padding: 20px 0;
+        }
+
+            .sidebar h2 {
+                text-align: center;
+                margin-bottom: 20px;
+                font-size: 20px;
+            }
+
+            .sidebar a {
+                text-decoration: none;
+                color: white;
+                padding: 12px 20px;
+                display: block;
+                transition: background 0.2s;
+            }
+
+                .sidebar a:hover, .sidebar a.active {
+                    background-color: #34495e;
+                }
+
+            .sidebar .logout {
+                margin-top: auto;
+                background-color: #e74c3c;
+            }
+
+                .sidebar .logout:hover {
+                    background-color: #c0392b;
+                }
+
+        .main-content {
+            flex: 1;
+            padding: 30px;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .election-card {
+            margin-bottom: 25px;
+        }
+
+        .card-header {
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .candidate-table th, .candidate-table td {
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>@(Model.IsAdmin ? "Admin Panel" : "Candidate Panel")</h2>
+
+        @if (Model.IsAdmin)
+        {
+            <a href="/CandidateRequest">Candidate Requests</a>
+            <a href="/ElectionManagement">Election Management</a>
+        }
+
+        <a href="/Results" class="active">Results</a>
+        <a href="/Login" class="logout">Logout</a>
+    </div>
+
+    <div class="main-content">
+        <h1>Election Results</h1>
+
+        @if (!Model.ElectionResults.Any())
+        {
+            <p class="text-muted">No elections available.</p>
+        }
+        else
+        {
+            @foreach (var election in Model.ElectionResults)
+            {
+                <div class="card election-card">
+                    <div class="card-header">
+                        @election.Title (@election.Status)
+                    </div>
+                    <div class="card-body">
+                        @if (!election.Candidates.Any())
+                        {
+                            <p class="text-warning mb-0">No approved candidates for this election.</p>
+                        }
+                        else
+                        {
+                            <table class="table table-bordered table-hover candidate-table mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Candidate</th>
+                                        <th>Slogan</th>
+                                        <th>Votes</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var c in election.Candidates)
+                                    {
+                                        <tr>
+                                            <td>@c.Name</td>
+                                            <td>@c.Slogan</td>
+                                            <td>@c.Votes</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</body>
+</html>

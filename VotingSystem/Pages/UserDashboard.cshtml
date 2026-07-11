@@ -1,0 +1,292 @@
+﻿@page
+@model VotingSystem.Pages.UserDashboardModel
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>User Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        /* Sidebar & Layout */
+        body {
+            background-color: #f4f6f9;
+            font-family: Arial, sans-serif;
+        }
+
+        .sidebar {
+            width: 220px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: #1e3a56;
+            color: white;
+            padding-top: 20px;
+        }
+
+            .sidebar h2 {
+                text-align: center;
+                margin-bottom: 30px;
+                font-size: 1.5rem;
+                font-weight: bold;
+            }
+
+            .sidebar a {
+                display: block;
+                padding: 12px 20px;
+                color: white;
+                text-decoration: none;
+                font-size: 1rem;
+            }
+
+                .sidebar a:hover {
+                    background: #2c4a6e;
+                    border-radius: 5px;
+                }
+
+        .logout-btn {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: #e74c3c;
+            color: white;
+            padding: 12px;
+            text-align: center;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .main-content {
+            margin-left: 240px;
+            padding: 30px;
+        }
+
+        .card {
+            background: white;
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0px 4px 12px rgba(0,0,0,0.08);
+            padding: 20px;
+            transition: transform 0.2s ease-in-out;
+        }
+
+            .card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0px 8px 20px rgba(0,0,0,0.12);
+            }
+
+        .btn-primary {
+            background-color: #3498db;
+            border: none;
+        }
+
+        .btn-success {
+            background-color: #2ecc71;
+            border: none;
+        }
+
+        .candidate-photo {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 50%;
+            display: block;
+            margin: auto;
+            margin-top: 10px;
+        }
+
+        .candidate-card-title {
+            margin-top: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        .candidate-card-subtitle {
+            font-size: 0.9rem;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <form id="antiForgeryForm" style="display:none;">@Html.AntiForgeryToken()</form>
+
+    <div class="sidebar">
+        <h2>User Panel</h2>
+        <a href="/UserDashboard">Dashboard</a>
+        <a href="/Results">Results</a>
+        <a href="#" data-bs-toggle="modal" data-bs-target="#feedbackModal">Feedback</a> <!-- Feedback modal button -->
+        <a href="/Logout" class="logout-btn">Logout</a>
+    </div>
+
+    <div class="main-content">
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+        }
+
+        @if (Model.Notifications != null && Model.Notifications.Any())
+        {
+            <div class="mb-4">
+                <h4>Notifications</h4>
+                <ul class="list-group">
+                    @foreach (var note in Model.Notifications)
+                    {
+                        <li class="list-group-item">@note</li>
+                    }
+                </ul>
+            </div>
+        }
+
+        <h2>Available Elections</h2>
+        <div class="row">
+            @foreach (var election in Model.ElectionList)
+            {
+                <div class="col-md-4 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">@election.Title</h5>
+                            <p>@election.Description</p>
+                            <p><strong>Start:</strong> @election.StartDate</p>
+                            <p><strong>End:</strong> @election.EndDate</p>
+                            <p class="text-success">@election.Status</p>
+
+                            <button class="btn btn-primary btn-sm" onclick="viewCandidates(@election.ElectionId)">View Candidates</button>
+
+                            @if (election.Status == "Upcoming")
+                            {
+                                <button class="btn btn-success btn-sm" onclick="openApplyModal(@election.ElectionId)">Apply</button>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Candidate Modal -->
+    <div id="candidateModal" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Candidates</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="candidateContent"><p>Loading...</p></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Apply Modal -->
+    <div id="applyModal" class="modal fade" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post" enctype="multipart/form-data" asp-page-handler="Apply">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-header">
+                        <h5 class="modal-title">Apply as Candidate</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="electionIdInput" asp-for="ApplyElectionId" />
+                        <div class="mb-3">
+                            <label class="form-label">Slogan</label>
+                            <input type="text" asp-for="Slogan" class="form-control" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Manifesto</label>
+<textarea asp-for="Manifesto" class="form-control" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Photo</label>
+                            <input type="file" asp-for="Photo" class="form-control" />
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-success">Submit Application</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div id="feedbackModal" class="modal fade" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post" asp-page-handler="SubmitFeedback">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Submit Feedback</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Your Name</label>
+                            <input type="text" name="Name" class="form-control" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="Email" class="form-control" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Message</label>
+<textarea name="Message" class="form-control" rows="4" required></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-success">Submit Feedback</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function viewCandidates(electionId) {
+            $("#candidateContent").html("<p>Loading...</p>");
+            $.get(`?handler=GetCandidates&electionId=${electionId}`, function (data) {
+                $("#candidateContent").html(data);
+                var modal = new bootstrap.Modal(document.getElementById('candidateModal'));
+                modal.show();
+            });
+        }
+
+        function openApplyModal(electionId) {
+            document.getElementById('electionIdInput').value = electionId;
+            var modal = new bootstrap.Modal(document.getElementById('applyModal'));
+            modal.show();
+        }
+
+        function vote(electionId, candidateId) {
+            if (!confirm("Are you sure you want to vote for this candidate?")) return;
+
+            const token = $('input[name="__RequestVerificationToken"]').val();
+            $.ajax({
+                url: '?handler=Vote',
+                type: 'POST',
+                data: { electionId, candidateId, __RequestVerificationToken: token },
+                success: function (response) {
+                    alert(response.message || "Vote submitted!");
+                    $("#candidateContent button").prop("disabled", true).text("✅ You already voted");
+                },
+                error: function (xhr, status, err) {
+                    alert("Vote failed: " + (xhr.responseText || xhr.status));
+                }
+            });
+        }
+    </script>
+</body>
+</html>
